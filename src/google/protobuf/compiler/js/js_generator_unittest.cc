@@ -126,6 +126,10 @@ TEST(JSGeneratorTest, Proto3GeneratorCommonjsTest) {
   JSTest("commonjs", "/test", "/test_import");
 }
 
+TEST(JSGeneratorTest, Proto3GeneratorEs6Test) {
+  JSTest("es6", "/test", "/test_import");
+}
+
 }  // namespace
 }  // namespace js
 }  // namespace compiler
