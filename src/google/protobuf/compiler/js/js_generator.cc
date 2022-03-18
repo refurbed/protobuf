@@ -223,7 +223,8 @@ std::string MaybeCrossFileRef(const GeneratorOptions& options,
                               const FileDescriptor* from_file,
                               const Descriptor* to_message) {
   if ((options.import_style == GeneratorOptions::kImportCommonJs ||
-       options.import_style == GeneratorOptions::kImportCommonJsStrict) &&
+       options.import_style == GeneratorOptions::kImportCommonJsStrict || 
+      options.import_style == GeneratorOptions::kImportEs6) &&
       from_file != to_message->file()) {
     // Cross-file ref in CommonJS needs to use the module alias instead of
     // the global name.
@@ -1735,7 +1736,7 @@ void Generator::GenerateProvides(const GeneratorOptions& options,
       //   foo.bar.Baz = function() { /* ... */ }
 
       // Do not use global scope in strict mode
-      if (options.import_style == GeneratorOptions::kImportCommonJsStrict) {
+      if (options.import_style == GeneratorOptions::kImportCommonJsStrict || options.import_style == GeneratorOptions::kImportEs6) {
         std::string namespaceObject = *it;
         // Remove "proto." from the namespace object
         GOOGLE_CHECK_EQ(0, namespaceObject.compare(0, 6, "proto."));
@@ -1747,6 +1748,25 @@ void Generator::GenerateProvides(const GeneratorOptions& options,
                        *it);
       }
     }
+  }
+}
+
+void Generator::GenerateExports(const GeneratorOptions& options,
+								io::Printer* printer,
+								const FileDescriptor* file,
+								std::set<std::string>* provided) const {
+  if (options.import_style == GeneratorOptions::kImportEs6) {
+    printer->Print("export const {\n");
+    auto ns = GetNamespace(options, file);
+    for (std::set<std::string>::iterator it = provided->begin();
+        it != provided->end(); ++it) {
+      auto export_name = it->substr(ns.length() + 1);
+      // only top level
+      if (export_name.find(".") == std::string::npos) {
+        printer->Print("  $name$,\n", "name", export_name);
+      }
+    }
+    printer->Print("} = $name$;\n", "name", ns);
   }
 }
 
@@ -3648,6 +3668,18 @@ void Generator::GenerateFile(const GeneratorOptions& options,
           "alias", ModuleAlias(name), "file",
           GetRootPath(file->name(), name) + GetJSFilename(options, name));
     }
+  } else if (options.import_style == GeneratorOptions::kImportEs6) {
+      printer->Print("import * as jspb from 'google-protobuf';\n");
+      printer->Print("var goog = jspb;\n");
+  	  printer->Print("var proto = {};\n\n");
+      for (int i = 0; i < file->dependency_count(); i++) {
+          const std::string& name = file->dependency(i)->name();
+          printer->Print(
+              "import * as $alias$ from '$file$';\n"
+              "goog.object.extend(proto, $alias$);\n",
+              "alias", ModuleAlias(name), "file",
+              GetRootPath(file->name(), name) + GetJSFilename(options, name));
+      }
   }
 
   std::set<std::string> provided;
@@ -3687,9 +3719,16 @@ void Generator::GenerateFile(const GeneratorOptions& options,
       !provided.empty()) {
     printer->Print("goog.object.extend(exports, $package$);\n", "package",
                    GetNamespace(options, file));
+      for (std::set<std::string>::iterator it = provided.begin();
+        it != provided.end(); ++it) {
+        printer->Print("module.exports = $provided$", "provided", *it);
+      }
   } else if (options.import_style == GeneratorOptions::kImportCommonJsStrict) {
     printer->Print("goog.object.extend(exports, proto);\n", "package",
                    GetNamespace(options, file));
+  } else if (options.import_style == GeneratorOptions::kImportEs6)
+  {
+      GenerateExports(options, printer, file, &provided);
   }
 
   // Emit well-known type methods.

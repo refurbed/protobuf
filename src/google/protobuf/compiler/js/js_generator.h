@@ -180,6 +180,9 @@ class PROTOC_EXPORT Generator : public CodeGenerator {
   // Print the goog.provides() found by the methods above.
   void GenerateProvides(const GeneratorOptions& options, io::Printer* printer,
                         std::set<std::string>* provided) const;
+  void GenerateExports(const GeneratorOptions& options, 
+					   io::Printer* printer, const FileDescriptor* file,
+					   std::set<std::string>* provided) const;
 
   // Generate goog.setTestOnly() if indicated.
   void GenerateTestOnly(const GeneratorOptions& options,
