@@ -159,6 +159,7 @@ set(tests_files
   ${protobuf_source_dir}/src/google/protobuf/compiler/parser_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/python/python_plugin_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/compiler/ruby/ruby_generator_unittest.cc
+  ${protobuf_source_dir}/src/google/protobuf/compiler/js/js_generator_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/descriptor_database_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/descriptor_unittest.cc
   ${protobuf_source_dir}/src/google/protobuf/drop_unknown_fields_test.cc
